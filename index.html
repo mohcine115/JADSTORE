@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111111"><title>JADSTORE | Mode Homme</title>
+<meta name="description" content="Costumes, t-shirts, casquettes, chaussures, baskets, pantalons et jeans. Commande sur WhatsApp.">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./config.js"></script>
+<style>
+:root{--dark:#111;--gold:#c9a66b;--cream:#f7f5f0;--muted:#777}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#151515}a{text-decoration:none;color:inherit}
+.top{background:#111;color:#fff;text-align:center;padding:10px;font-size:11px;letter-spacing:1px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 6%;border-bottom:1px solid #eee}
+.logo{font-size:25px;font-weight:900;letter-spacing:3px}.logo span{color:var(--gold)}
+nav{display:flex;gap:18px;font-size:13px}.btn{border:0;padding:13px 17px;background:#111;color:white;font-weight:bold;cursor:pointer}
+.hero{display:grid;grid-template-columns:1fr 1fr;background:#171717;color:white;min-height:450px}
+.heroText{padding:55px 10% 55px 12%;align-self:center}.eyebrow{color:var(--gold);letter-spacing:3px;font-size:11px;font-weight:bold}
+h1{font-size:clamp(38px,5vw,62px);line-height:1.05;margin:22px 0}.hero h1 span{color:var(--gold)}
+.hero p{color:#ccc;line-height:1.8;max-width:420px}.heroImage{min-height:450px;background:linear-gradient(90deg,#171717,transparent 35%),url('https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=1100&q=85') center/cover}
+.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:22px 5%;background:var(--cream);text-align:center;font-size:12px}.benefits b{display:block;margin-bottom:5px}
+section.catalog{padding:60px 6%}.heading{text-align:center;margin-bottom:28px}.heading h2{font-size:30px;margin:10px}.heading p{font-size:13px;color:var(--muted)}
+.filters{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:28px}.filter{border:1px solid #ddd;background:white;border-radius:30px;padding:10px 15px;cursor:pointer;font-size:12px}.filter.active{background:#111;color:white}
+.products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:25px 15px}.card{min-width:0}.photo{position:relative;aspect-ratio:3/4;background:var(--cream)}.photo img{width:100%;height:100%;object-fit:cover}.tag{position:absolute;top:9px;left:9px;background:white;padding:6px;font-size:10px}
+.info{padding:12px 2px}.info h3{font-size:15px;margin:0 0 8px}.desc{color:var(--muted);font-size:12px;line-height:1.5;min-height:34px}.price{font-weight:bold;margin:10px 0}.options{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.options select{min-width:0;width:100%;padding:9px 3px;border:1px solid #ddd;background:white;font-size:11px}.add{width:100%;font-size:11px}
+.cart{background:var(--cream);padding:55px 6%}.cartInner{max-width:800px;margin:auto}.cartBox{background:white;border:1px solid #eee;padding:22px}.cartRow{display:grid;grid-template-columns:1fr auto;gap:12px;border-bottom:1px solid #eee;padding:13px 0}.cartRow small{display:block;color:#777;line-height:1.7}.controls{display:flex;align-items:center;gap:7px;margin-top:8px}.controls button{background:white;color:#111;border:1px solid #ddd;padding:5px 10px}.total{display:flex;justify-content:space-between;font-size:20px;font-weight:bold;padding:20px 0}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fields input,.fields textarea{padding:12px;border:1px solid #ddd;width:100%;font:inherit}.fields textarea{grid-column:1/-1;min-height:75px}.wa{background:#168b48;color:white;width:100%;padding:16px;border:0;font-weight:bold;margin-top:14px;cursor:pointer}.note{font-size:12px;color:#777;line-height:1.6;text-align:center}
+footer{background:#111;color:white;text-align:center;padding:38px 5%}footer p{font-size:12px;color:#bbb;line-height:1.8}
+@media(max-width:850px){.products{grid-template-columns:repeat(3,minmax(0,1fr))}.heroText{padding-left:8%}}
+@media(max-width:600px){header{padding:16px 4%;flex-wrap:wrap}.logo{font-size:22px}nav{order:3;width:100%;overflow:auto;gap:14px}nav a{white-space:nowrap}.hero{grid-template-columns:1fr}.heroText{padding:40px 7%}.heroImage{min-height:280px}.benefits{font-size:10px;padding:18px 2%}.products{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 10px}section.catalog,.cart{padding:42px 4%}.options{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.fields textarea{grid-column:auto}.cartBox{padding:14px}}
+</style></head>
+<body>
+<div class="top">NOUVELLE COLLECTION · STYLE & ÉLÉGANCE · JADSTORE</div>
+<header><a class="logo" href="#">JAD<span>STORE</span></a><nav><a href="#accueil">Accueil</a><a href="#boutique">Boutique</a><a href="#panier">Mon panier (<span id="count">0</span>)</a></nav><a class="btn" href="#panier">Commander</a></header>
+<main>
+<section class="hero" id="accueil"><div class="heroText"><span class="eyebrow">MODE MASCULINE</span><h1>Ton style.<br>Ta signature.<br><span>JADSTORE.</span></h1><p>Des pièces pour affirmer ton style, du costume élégant aux sneakers tendance.</p><a class="btn" style="background:var(--gold);color:#111" href="#boutique">DÉCOUVRIR LA COLLECTION →</a></div><div class="heroImage" role="img" aria-label="Mode masculine"></div></section>
+<div class="benefits"><div><b>✦ Style & qualité</b>Une sélection pour tous les jours</div><div><b>✦ Commande facile</b>Directement sur WhatsApp</div><div><b>✦ Prix en DH</b>Confirmation par la boutique</div></div>
+<section class="catalog" id="boutique"><div class="heading"><span class="eyebrow">LA SÉLECTION JADSTORE</span><h2>Explore notre collection</h2><p>Les produits publiés depuis le back-office apparaissent ici.</p></div><div class="filters" id="filters"></div><div class="products" id="products"><p>Chargement du catalogue…</p></div><p class="note" id="catalogStatus"></p></section>
+<section class="cart" id="panier"><div class="cartInner"><div class="heading"><span class="eyebrow">PRESQUE À TOI</span><h2>Ton panier</h2><p>Vérifie ta commande avant de contacter la boutique.</p></div><div class="cartBox"><div id="cartItems">Ton panier est vide.</div><div class="total"><span>Total estimé</span><span id="total">0 DH</span></div><p class="note">Hors frais de livraison. Disponibilité et prix final à confirmer sur WhatsApp.</p><div class="fields"><input id="customerName" placeholder="Nom complet *" maxlength="80"><input id="customerPhone" placeholder="Téléphone *" maxlength="25" type="tel"><input id="city" placeholder="Ville *" maxlength="80"><input id="address" placeholder="Adresse (facultatif)" maxlength="180"><textarea id="notes" placeholder="Remarques (facultatif)" maxlength="500"></textarea></div><button class="wa" id="checkout">COMMANDER SUR WHATSAPP</button></div></div></section>
+</main><footer><div class="logo">JAD<span>STORE</span></div><p>Le style qui te ressemble.<br>Costumes · T-shirts · Jeans · Sneakers</p><p>© <span id="year"></span> JADSTORE. Tous droits réservés.</p><p><a href="./admin.html">Administration</a></p></footer>
+<script>
+(() => {
+ const cfg=window.JADSTORE_CONFIG||{},$=id=>document.getElementById(id);
+ const categories=['Tout','Costume','T-shirt','Casquette','Chaussures','Baskets','Pantalon tissu','Jeans','Autre'];
+ let db=null,products=[],category='Tout',cart=[];
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=n=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:2}).format(n)+' DH';
+ function renderFilters(){$('filters').innerHTML=categories.map(c=>`<button class="filter ${c===category?'active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')}
+ function renderProducts(){
+  const list=products.filter(p=>category==='Tout'||p.category===category);
+  if(!list.length){$('products').innerHTML='<p>Aucun produit publié dans cette catégorie pour le moment.</p>';return}
+  $('products').innerHTML=list.map(p=>`<article class="card"><div class="photo"><img loading="lazy" src="${esc(p.image_url||'https://placehold.co/600x800/f7f5f0/111?text=JADSTORE')}" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='https://placehold.co/600x800/f7f5f0/111?text=JADSTORE'"><span class="tag">${p.stock>0?'Disponible':'Rupture'}</span></div><div class="info"><h3>${esc(p.name)}</h3><div class="desc">${esc(p.description)}</div><div class="price">${money(Number(p.price))}</div><div class="options"><select id="s-${p.id}" aria-label="Taille">${(p.sizes?.length?p.sizes:['Unique']).map(s=>`<option>${esc(s)}</option>`).join('')}</select><select id="c-${p.id}" aria-label="Couleur">${(p.colors?.length?p.colors:['Standard']).map(c=>`<option>${esc(c)}</option>`).join('')}</select></div><button class="btn add" data-add="${p.id}" ${p.stock<1?'disabled':''}>${p.stock<1?'RUPTURE DE STOCK':'AJOUTER AU PANIER +'}</button></div></article>`).join('');
+ }
+ function renderCart(){
+  $('count').textContent=cart.reduce((s,i)=>s+i.quantity,0);
+  $('total').textContent=money(cart.reduce((s,i)=>s+i.price*i.quantity,0));
+  if(!cart.length){$('cartItems').innerHTML='Ton panier est vide.';return}
+  $('cartItems').innerHTML=cart.map((i,n)=>`<div class="cartRow"><div><b>${esc(i.name)}</b><small>Taille : ${esc(i.size)} · Couleur : ${esc(i.color)}<br>${money(i.price)} / unité</small><div class="controls"><button data-minus="${n}">−</button><span>${i.quantity}</span><button data-plus="${n}">+</button><button data-remove="${n}">Supprimer</button></div></div><b>${money(i.price*i.quantity)}</b></div>`).join('');
+ }
+ $('filters').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;category=b.dataset.cat;renderFilters();renderProducts()});
+ $('products').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(!b)return;const p=products.find(x=>x.id===b.dataset.add);if(!p||p.stock<1)return;const size=$('s-'+p.id).value,color=$('c-'+p.id).value;const old=cart.find(i=>i.id===p.id&&i.size===size&&i.color===color);if(old)old.quantity++;else cart.push({id:p.id,name:p.name,price:Number(p.price),size,color,quantity:1});renderCart();});
+ $('cartItems').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;let n;if(b.dataset.minus!==undefined){n=+b.dataset.minus;cart[n].quantity--;if(cart[n].quantity<=0)cart.splice(n,1)}else if(b.dataset.plus!==undefined){n=+b.dataset.plus;const p=products.find(p=>p.id===cart[n].id);if(cart[n].quantity<(p?.stock??999))cart[n].quantity++;else alert('Quantité maximale disponible atteinte.')}else if(b.dataset.remove!==undefined)cart.splice(+b.dataset.remove,1);renderCart()});
+ $('checkout').addEventListener('click',()=>{
+  if(!cart.length){alert('Ajoute au moins un produit au panier.');return}
+  const num=String(cfg.WHATSAPP_NUMBER||'').replace(/\D/g,'');
+  if(!/^\d{10,15}$/.test(num)||num==='212600000000'){alert('Le numéro WhatsApp de la boutique doit être configuré dans config.js.');return}
+  const name=$('customerName').value.trim(),phone=$('customerPhone').value.trim(),city=$('city').value.trim();
+  if(!name||!phone||!city){alert('Remplis le nom, le téléphone et la ville.');return}
+  const total=cart.reduce((s,i)=>s+i.price*i.quantity,0);
+  const lines=['Bonjour JADSTORE ! 👋','Je souhaite confirmer cette commande :','',...cart.map((i,n)=>`${n+1}. ${i.name}\nTaille : ${i.size}\nCouleur : ${i.color}\nQuantité : ${i.quantity}\nPrix unitaire : ${money(i.price)}\nSous-total : ${money(i.price*i.quantity)}`),'',`TOTAL ESTIMÉ : ${money(total)}`,'(Hors frais de livraison)','',`Nom : ${name}`,`Téléphone : ${phone}`,`Ville : ${city}`,`Adresse : ${$('address').value.trim()||'À préciser'}`,`Remarques : ${$('notes').value.trim()||'Aucune'}`,'','Merci de confirmer le stock, les frais de livraison et le prix final.'];
+  const url='https://wa.me/'+num+'?text='+encodeURIComponent(lines.join('\n'));window.open(url,'_blank')|| (location.href=url);
+ });
+ $('year').textContent=new Date().getFullYear();
+ async function init(){
+  renderFilters();renderCart();
+  if(!cfg.SUPABASE_URL||cfg.SUPABASE_URL.includes('COLLE_ICI')||!cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_ANON_KEY.includes('COLLE_ICI')){$('products').innerHTML='<p>La boutique doit encore être connectée à Supabase. Configure config.js puis recharge la page.</p>';return}
+  db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const {data,error}=await db.from('products').select('id,name,category,price,description,sizes,colors,stock,image_url,is_published,created_at').eq('is_published',true).order('created_at',{ascending:false});
+  if(error){$('products').innerHTML='<p>Impossible de charger les produits. Vérifie la configuration Supabase et les règles SQL.</p>';$('catalogStatus').textContent=error.message;return}
+  products=data||[];renderProducts();
+ }
+ init();
+})();
+</script></body></html>

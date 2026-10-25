@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111111"><title>Administration | JADSTORE</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<style>
+:root{--ink:#151515;--gold:#c9a66b;--bg:#f5f5f2;--line:#e6e6e2;--muted:#6b6b6b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Arial,sans-serif}
+header{background:#111;color:#fff;padding:18px max(5%,calc((100% - 1100px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px}
+.logo{font-weight:900;letter-spacing:3px;font-size:22px}.logo span{color:var(--gold)}
+main{max-width:1100px;margin:30px auto;padding:0 18px}.panel{background:#fff;border:1px solid var(--line);padding:22px;border-radius:12px;margin-bottom:20px}
+h1{font-size:25px;margin:0 0 8px}h2{font-size:19px;margin:0 0 16px}.muted{color:var(--muted);font-size:13px;line-height:1.6}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px}.full{grid-column:1/-1}
+label{font-size:13px;font-weight:bold}input,textarea,select{width:100%;padding:12px;border:1px solid #d8d8d3;border-radius:7px;background:white;color:#111;font:inherit}
+textarea{min-height:90px;resize:vertical}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button,.button{border:0;border-radius:7px;padding:12px 16px;background:#111;color:white;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block}
+button.gold{background:var(--gold);color:#111}button.light{background:#eee;color:#111}button.danger{background:#a62b2b}button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}.status{padding:12px;background:#f4f0e8;border-radius:7px;margin:12px 0;font-size:13px;white-space:pre-wrap}
+#productList{display:grid;gap:10px}.product{display:grid;grid-template-columns:78px 1fr auto;gap:13px;align-items:center;border:1px solid var(--line);padding:10px;border-radius:8px}
+.product img{width:78px;height:90px;object-fit:cover;background:#eee;border-radius:5px}.product h3{font-size:15px;margin:0 0 5px}.product p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
+.badge{display:inline-block;padding:4px 7px;border-radius:20px;background:#eee;font-size:11px}.badge.on{background:#e2f5e8;color:#176735}
+#preview{max-width:150px;max-height:180px;object-fit:contain;display:block;margin-top:8px;border-radius:6px}
+@media(max-width:650px){main{margin:18px auto}.grid{grid-template-columns:1fr}.full{grid-column:auto}.panel{padding:16px}.product{grid-template-columns:60px 1fr}.product img{width:60px;height:75px}.product .actions{grid-column:1/-1}.product .actions button{flex:1}.product .actions{display:flex}}
+</style></head>
+<body>
+<header><div class="logo">JAD<span>STORE</span> <small style="font-size:11px;letter-spacing:1px">ADMIN</small></div><a class="button" href="./index.html">Voir la boutique ↗</a></header>
+<main>
+<section id="loginPanel" class="panel">
+<h1>Connexion administrateur</h1><p class="muted">Connecte-toi avec le compte créé dans Supabase. Il n'y a pas de formulaire d'inscription public.</p>
+<form id="loginForm" class="grid">
+<div class="field full"><label for="email">E-mail administrateur</label><input id="email" type="email" autocomplete="username" required></div>
+<div class="field full"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" required></div>
+<div class="full"><button type="submit">Se connecter</button></div>
+</form><div id="loginStatus" class="status hidden" role="status"></div>
+</section>
+
+<section id="appPanel" class="hidden">
+<div class="panel">
+<div class="row" style="justify-content:space-between"><div><h1>Gestion des produits</h1><p class="muted">Ajoute, modifie, publie ou masque tes articles. Les modifications sont enregistrées en ligne.</p></div><button id="logoutBtn" class="light">Déconnexion</button></div>
+<div id="appStatus" class="status hidden" role="status"></div>
+</div>
+<div class="panel">
+<h2 id="formTitle">Ajouter un produit</h2>
+<form id="productForm" class="grid">
+<input id="productId" type="hidden">
+<div class="field"><label for="name">Nom du produit *</label><input id="name" maxlength="160" required placeholder="Costume classique"></div>
+<div class="field"><label for="category">Catégorie *</label><select id="category" required>
+<option>Costume</option><option>T-shirt</option><option>Casquette</option><option>Chaussures</option><option>Baskets</option><option>Pantalon tissu</option><option>Jeans</option><option>Autre</option></select></div>
+<div class="field"><label for="price">Prix (DH) *</label><input id="price" type="number" min="0" step="0.01" required placeholder="899"></div>
+<div class="field"><label for="stock">Stock disponible *</label><input id="stock" type="number" min="0" step="1" required value="10"></div>
+<div class="field full"><label for="description">Description</label><textarea id="description" maxlength="2000" placeholder="Description du produit"></textarea></div>
+<div class="field"><label for="sizes">Tailles (séparées par des virgules)</label><input id="sizes" placeholder="48, 50, 52, 54"></div>
+<div class="field"><label for="colors">Couleurs (séparées par des virgules)</label><input id="colors" placeholder="Noir, Bleu marine"></div>
+<div class="field full"><label for="photo">Photo (JPG, PNG ou WebP, 5 Mo maximum)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="preview" class="hidden" alt="Aperçu de la photo"><p class="muted">Si tu modifies un produit sans choisir une nouvelle photo, l'ancienne photo est conservée.</p></div>
+<div class="field full"><label class="row" style="font-weight:normal"><input id="published" type="checkbox" checked style="width:auto"> Publier ce produit sur la landing page</label></div>
+<div class="row full"><button id="saveBtn" class="gold" type="submit">Enregistrer le produit</button><button id="resetBtn" class="light" type="button">Vider le formulaire</button></div>
+</form>
+</div>
+<div class="panel"><div class="row" style="justify-content:space-between"><h2>Catalogue enregistré</h2><button id="refreshBtn" class="light">Actualiser</button></div><div id="productList"><p class="muted">Chargement…</p></div></div>
+</section>
+</main>
+<script>
+(() => {
+  const cfg = window.JADSTORE_CONFIG || {};
+  const statusLogin = document.getElementById('loginStatus');
+  const statusApp = document.getElementById('appStatus');
+  let db = null, currentUser = null, products = [], currentImageUrl = null, currentImagePath = null;
+  const $ = id => document.getElementById(id);
+  const escapeHTML = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function showStatus(el, message, error=false){el.textContent=message;el.classList.remove('hidden');el.style.background=error?'#fde8e8':'#f4f0e8';}
+  function hideStatus(el){el.classList.add('hidden');}
+  function configOK(){return cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('COLLE_ICI') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('COLLE_ICI');}
+  function parseList(v){return v.split(',').map(x=>x.trim()).filter(Boolean);}
+  async function ensureAdmin(){
+    const {data:{session}} = await db.auth.getSession();
+    if(!session){showLogin();return;}
+    currentUser=session.user;
+    const {data,error}=await db.from('store_admins').select('user_id').eq('user_id',currentUser.id).maybeSingle();
+    if(error || !data){await db.auth.signOut();showLogin();showStatus(statusLogin,'Ce compte n’est pas autorisé comme administrateur. Vérifie la table store_admins.',true);return;}
+    $('loginPanel').classList.add('hidden');$('appPanel').classList.remove('hidden');
+    await loadProducts();
+  }
+  function showLogin(){$('loginPanel').classList.remove('hidden');$('appPanel').classList.add('hidden');}
+  $('loginForm').addEventListener('submit',async e=>{
+    e.preventDefault();hideStatus(statusLogin);
+    if(!configOK()){showStatus(statusLogin,'Configure d’abord config.js avec l’URL et la clé publique de ton projet Supabase.',true);return;}
+    if(!db) db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+    const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+    if(error){showStatus(statusLogin,'Connexion impossible : '+error.message,true);return;}
+    await ensureAdmin();
+  });
+  $('logoutBtn').addEventListener('click',async()=>{await db.auth.signOut();currentUser=null;showLogin();});
+  async function loadProducts(){
+    showStatus(statusApp,'Chargement du catalogue…');
+    const {data,error}=await db.from('products').select('*').order('created_at',{ascending:false});
+    if(error){showStatus(statusApp,'Erreur de chargement : '+error.message,true);return;}
+    products=data||[];hideStatus(statusApp);renderList();
+  }
+  function renderList(){
+    if(!products.length){$('productList').innerHTML='<p class="muted">Aucun produit pour le moment. Ajoute ton premier article avec le formulaire.</p>';return;}
+    $('productList').innerHTML=products.map(p=>`<article class="product">
+      <img src="${escapeHTML(p.image_url||'https://placehold.co/150x180/f5f5f2/111?text=JADSTORE')}" alt="">
+      <div><h3>${escapeHTML(p.name)} · ${Number(p.price).toLocaleString('fr-FR')} DH</h3>
+      <p>${escapeHTML(p.category)} · Stock : ${p.stock} · ${escapeHTML((p.sizes||[]).join(', '))}</p>
+      <p>${escapeHTML(p.description||'')}</p>
+      <span class="badge ${p.is_published?'on':''}">${p.is_published?'Publié':'Masqué'}</span></div>
+      <div class="actions row"><button class="light" data-edit="${p.id}">Modifier</button><button class="danger" data-delete="${p.id}">Supprimer</button></div>
+    </article>`).join('');
+  }
+  function resetForm(){
+    $('productForm').reset();$('productId').value='';$('stock').value='10';$('published').checked=true;
+    $('formTitle').textContent='Ajouter un produit';$('saveBtn').textContent='Enregistrer le produit';
+    $('preview').classList.add('hidden');$('preview').removeAttribute('src');
+    currentImageUrl=null;currentImagePath=null;hideStatus(statusApp);
+  }
+  $('resetBtn').addEventListener('click',resetForm);
+  $('refreshBtn').addEventListener('click',loadProducts);
+  $('photo').addEventListener('change',()=>{
+    const f=$('photo').files[0];if(!f)return;
+    if(!['image/jpeg','image/png','image/webp'].includes(f.type)){showStatus(statusApp,'Format refusé. Utilise JPG, PNG ou WebP.',true);$('photo').value='';return;}
+    if(f.size>5*1024*1024){showStatus(statusApp,'La photo dépasse 5 Mo.',true);$('photo').value='';return;}
+    $('preview').src=URL.createObjectURL(f);$('preview').classList.remove('hidden');
+  });
+  $('productForm').addEventListener('submit',async e=>{
+    e.preventDefault();if(!db||!currentUser)return;
+    const id=$('productId').value||crypto.randomUUID();
+    const file=$('photo').files[0];let imageUrl=currentImageUrl,imagePath=currentImagePath;
+    $('saveBtn').disabled=true;$('saveBtn').textContent='Enregistrement…';
+    try{
+      if(file){
+        const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+        const path=`${id}/${Date.now()}.${ext}`;
+        const {error:uploadError}=await db.storage.from('jadstore-products').upload(path,file,{upsert:false,contentType:file.type,cacheControl:'3600'});
+        if(uploadError)throw uploadError;
+        const {data:urlData}=db.storage.from('jadstore-products').getPublicUrl(path);
+        imageUrl=urlData.publicUrl;imagePath=path;
+      }
+      const payload={
+        name:$('name').value.trim(),category:$('category').value,
+        price:Number($('price').value),description:$('description').value.trim(),
+        sizes:parseList($('sizes').value),colors:parseList($('colors').value),
+        stock:Number($('stock').value),image_url:imageUrl,image_path:imagePath,
+        is_published:$('published').checked,updated_at:new Date().toISOString()
+      };
+      if(!payload.name||!Number.isFinite(payload.price)||payload.price<0||!Number.isInteger(payload.stock)||payload.stock<0)throw new Error('Vérifie le nom, le prix et le stock.');
+      let result;
+      if($('productId').value) result=await db.from('products').update(payload).eq('id',id);
+      else result=await db.from('products').insert({...payload,id});
+      if(result.error)throw result.error;
+      showStatus(statusApp,'Produit enregistré avec succès. La landing page affichera la version publiée.');
+      resetForm();await loadProducts();showStatus(statusApp,'Produit enregistré. Catalogue actualisé.');
+    }catch(err){showStatus(statusApp,'Erreur : '+(err.message||String(err)),true);}
+    finally{$('saveBtn').disabled=false;$('saveBtn').textContent=$('productId').value?'Mettre à jour le produit':'Enregistrer le produit';}
+  });
+  $('productList').addEventListener('click',async e=>{
+    const edit=e.target.closest('[data-edit]');const del=e.target.closest('[data-delete]');
+    if(edit){
+      const p=products.find(x=>x.id===edit.dataset.edit);if(!p)return;
+      $('productId').value=p.id;$('name').value=p.name;$('category').value=p.category;$('price').value=p.price;
+      $('stock').value=p.stock;$('description').value=p.description||'';$('sizes').value=(p.sizes||[]).join(', ');
+      $('colors').value=(p.colors||[]).join(', ');$('published').checked=p.is_published;
+      currentImageUrl=p.image_url;currentImagePath=p.image_path;
+      if(p.image_url){$('preview').src=p.image_url;$('preview').classList.remove('hidden');}else{$('preview').classList.add('hidden');}
+      $('formTitle').textContent='Modifier : '+p.name;$('saveBtn').textContent='Mettre à jour le produit';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+    if(del){
+      const p=products.find(x=>x.id===del.dataset.delete);if(!p)return;
+      if(!confirm(`Supprimer définitivement « ${p.name} » ?`))return;
+      const {error}=await db.from('products').delete().eq('id',p.id);
+      if(error){showStatus(statusApp,'Suppression impossible : '+error.message,true);return;}
+      // Le fichier image n'est pas supprimé automatiquement afin d'éviter
+      // de casser une image éventuellement réutilisée. Tu peux nettoyer Storage plus tard.
+      await loadProducts();showStatus(statusApp,'Produit supprimé.');
+    }
+  });
+  if(configOK()){
+    db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+    db.auth.getSession().then(({data})=>{if(data.session)ensureAdmin();});
+  }else{
+    showStatus(statusLogin,'Étape requise : ouvre config.js et colle l’URL et la clé publique de Supabase.',true);
+  }
+})();
+</script>
+</body></html>
