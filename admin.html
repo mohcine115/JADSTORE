@@ -21,7 +21,7 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
 #productList{display:grid;gap:10px}.product{display:grid;grid-template-columns:78px 1fr auto;gap:13px;align-items:center;border:1px solid var(--line);padding:10px;border-radius:8px}
 .product img{width:78px;height:90px;object-fit:cover;background:#eee;border-radius:5px}.product h3{font-size:15px;margin:0 0 5px}.product p{font-size:12px;color:var(--muted);margin:0;line-height:1.6}
 .badge{display:inline-block;padding:4px 7px;border-radius:20px;background:#eee;font-size:11px}.badge.on{background:#e2f5e8;color:#176735}
-#preview{max-width:150px;max-height:180px;object-fit:contain;display:block;margin-top:8px;border-radius:6px}
+#preview{max-width:150px;max-height:180px;object-fit:contain;display:block;margin-top:8px;border-radius:6px}.gallery{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.thumb{width:92px;position:relative;border:1px solid var(--line);border-radius:8px;padding:5px;background:#fff}.thumb img{width:80px;height:95px;object-fit:cover;border-radius:5px;display:block}.thumb button{padding:5px 7px;font-size:11px;width:100%;margin-top:5px}.thumb .mainTag{font-size:10px;color:#176735;margin-top:4px;display:block;text-align:center}
 @media(max-width:650px){main{margin:18px auto}.grid{grid-template-columns:1fr}.full{grid-column:auto}.panel{padding:16px}.product{grid-template-columns:60px 1fr}.product img{width:60px;height:75px}.product .actions{grid-column:1/-1}.product .actions button{flex:1}.product .actions{display:flex}}
 </style></head>
 <body>
@@ -53,7 +53,7 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
 <div class="field full"><label for="description">Description</label><textarea id="description" maxlength="2000" placeholder="Description du produit"></textarea></div>
 <div class="field"><label for="sizes">Tailles (séparées par des virgules)</label><input id="sizes" placeholder="48, 50, 52, 54"></div>
 <div class="field"><label for="colors">Couleurs (séparées par des virgules)</label><input id="colors" placeholder="Noir, Bleu marine"></div>
-<div class="field full"><label for="photo">Photo (JPG, PNG ou WebP, 5 Mo maximum)</label><input id="photo" type="file" accept="image/jpeg,image/png,image/webp"><img id="preview" class="hidden" alt="Aperçu de la photo"><p class="muted">Si tu modifies un produit sans choisir une nouvelle photo, l'ancienne photo est conservée.</p></div>
+<div class="field full"><label for="photos">Photos du produit (JPG, PNG ou WebP, 5 Mo maximum par photo)</label><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="muted">Sélectionne plusieurs photos en une seule fois. Pour en ajouter plus tard, modifie le produit puis sélectionne les nouvelles photos. Les photos déjà enregistrées sont conservées, sauf si tu les retires avec le bouton correspondant.</p><div id="photoGallery" class="gallery" aria-live="polite"></div></div>
 <div class="field full"><label class="row" style="font-weight:normal"><input id="published" type="checkbox" checked style="width:auto"> Publier ce produit sur la landing page</label></div>
 <div class="row full"><button id="saveBtn" class="gold" type="submit">Enregistrer le produit</button><button id="resetBtn" class="light" type="button">Vider le formulaire</button></div>
 </form>
@@ -66,12 +66,14 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
   const cfg = window.JADSTORE_CONFIG || {};
   const statusLogin = document.getElementById('loginStatus');
   const statusApp = document.getElementById('appStatus');
-  let db = null, currentUser = null, products = [], currentImageUrl = null, currentImagePath = null;
+  let db = null, currentUser = null, products = [], currentImageUrls = [], currentImagePath = null, selectedFiles = [];
   const $ = id => document.getElementById(id);
   const escapeHTML = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function showStatus(el, message, error=false){el.textContent=message;el.classList.remove('hidden');el.style.background=error?'#fde8e8':'#f4f0e8';}
   function hideStatus(el){el.classList.add('hidden');}
-  function configOK(){return cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('COLLE_ICI') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('COLLE_ICI');}
+  function configOK(){const key=cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_KEY;return cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('COLLE_ICI') && key && !key.includes('COLLE_ICI');}
+  function initDb(){if(!db){const key=cfg.SUPABASE_ANON_KEY||cfg.SUPABASE_KEY;db=window.supabase.createClient(cfg.SUPABASE_URL,key);}}
+  function renderPhotoGallery(){const g=$('photoGallery');const existing=currentImageUrls.map((url,i)=>({url,existing:true,index:i}));const fresh=selectedFiles.map((file,i)=>({url:URL.createObjectURL(file),existing:false,index:i,file}));g.innerHTML=[...existing,...fresh].map((x,i)=>`<div class="thumb"><img src="${escapeHTML(x.url)}" alt="Photo ${i+1}"><span class="mainTag">${i===0?'Photo principale':'Photo '+(i+1)}</span><button type="button" class="light" data-remove-photo="${x.existing?'old':'new'}:${x.index}">Retirer</button></div>`).join('')||'<p class="muted">Aucune photo sélectionnée.</p>';}
   function parseList(v){return v.split(',').map(x=>x.trim()).filter(Boolean);}
   async function ensureAdmin(){
     const {data:{session}} = await db.auth.getSession();
@@ -86,7 +88,7 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();hideStatus(statusLogin);
     if(!configOK()){showStatus(statusLogin,'Configure d’abord config.js avec l’URL et la clé publique de ton projet Supabase.',true);return;}
-    if(!db) db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+    initDb();
     const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
     if(error){showStatus(statusLogin,'Connexion impossible : '+error.message,true);return;}
     await ensureAdmin();
@@ -112,45 +114,54 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
   function resetForm(){
     $('productForm').reset();$('productId').value='';$('stock').value='10';$('published').checked=true;
     $('formTitle').textContent='Ajouter un produit';$('saveBtn').textContent='Enregistrer le produit';
-    $('preview').classList.add('hidden');$('preview').removeAttribute('src');
-    currentImageUrl=null;currentImagePath=null;hideStatus(statusApp);
+    $('photos').value='';currentImageUrls=[];selectedFiles=[];currentImagePath=null;renderPhotoGallery();hideStatus(statusApp);
   }
   $('resetBtn').addEventListener('click',resetForm);
   $('refreshBtn').addEventListener('click',loadProducts);
-  $('photo').addEventListener('change',()=>{
-    const f=$('photo').files[0];if(!f)return;
-    if(!['image/jpeg','image/png','image/webp'].includes(f.type)){showStatus(statusApp,'Format refusé. Utilise JPG, PNG ou WebP.',true);$('photo').value='';return;}
-    if(f.size>5*1024*1024){showStatus(statusApp,'La photo dépasse 5 Mo.',true);$('photo').value='';return;}
-    $('preview').src=URL.createObjectURL(f);$('preview').classList.remove('hidden');
+  $('photos').addEventListener('change',()=>{
+    const files=Array.from($('photos').files||[]);
+    const invalid=files.find(f=>!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>5*1024*1024);
+    if(invalid){showStatus(statusApp, !['image/jpeg','image/png','image/webp'].includes(invalid.type)?'Format refusé : utilise JPG, PNG ou WebP.':'Une photo dépasse 5 Mo. Chaque photo doit faire 5 Mo maximum.',true);$('photos').value='';return;}
+    selectedFiles.push(...files);$('photos').value='';renderPhotoGallery();hideStatus(statusApp);
+  });
+  $('photoGallery').addEventListener('click',e=>{
+    const b=e.target.closest('[data-remove-photo]');if(!b)return;
+    const [kind,n]=b.dataset.removePhoto.split(':');const i=Number(n);
+    if(kind==='old')currentImageUrls.splice(i,1);else selectedFiles.splice(i,1);
+    renderPhotoGallery();
   });
   $('productForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!db||!currentUser)return;
-    const id=$('productId').value||crypto.randomUUID();
-    const file=$('photo').files[0];let imageUrl=currentImageUrl,imagePath=currentImagePath;
+    const isEdit=Boolean($('productId').value);const id=$('productId').value||crypto.randomUUID();
     $('saveBtn').disabled=true;$('saveBtn').textContent='Enregistrement…';
     try{
-      if(file){
+      const uploadedUrls=[];
+      for(let i=0;i<selectedFiles.length;i++){
+        const file=selectedFiles[i];
         const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
-        const path=`${id}/${Date.now()}.${ext}`;
+        const path=`${id}/${Date.now()}-${i}.${ext}`;
         const {error:uploadError}=await db.storage.from('jadstore-products').upload(path,file,{upsert:false,contentType:file.type,cacheControl:'3600'});
         if(uploadError)throw uploadError;
         const {data:urlData}=db.storage.from('jadstore-products').getPublicUrl(path);
-        imageUrl=urlData.publicUrl;imagePath=path;
+        uploadedUrls.push(urlData.publicUrl);
       }
+      const allUrls=[...currentImageUrls,...uploadedUrls];
       const payload={
         name:$('name').value.trim(),category:$('category').value,
         price:Number($('price').value),description:$('description').value.trim(),
         sizes:parseList($('sizes').value),colors:parseList($('colors').value),
-        stock:Number($('stock').value),image_url:imageUrl,image_path:imagePath,
-        is_published:$('published').checked,updated_at:new Date().toISOString()
+        stock:Number($('stock').value),image_url:allUrls[0]||null,image_urls:allUrls,
+        image_path:currentImagePath,is_published:$('published').checked,updated_at:new Date().toISOString()
       };
       if(!payload.name||!Number.isFinite(payload.price)||payload.price<0||!Number.isInteger(payload.stock)||payload.stock<0)throw new Error('Vérifie le nom, le prix et le stock.');
       let result;
-      if($('productId').value) result=await db.from('products').update(payload).eq('id',id);
+      if(isEdit) result=await db.from('products').update(payload).eq('id',id);
       else result=await db.from('products').insert({...payload,id});
-      if(result.error)throw result.error;
-      showStatus(statusApp,'Produit enregistré avec succès. La landing page affichera la version publiée.');
-      resetForm();await loadProducts();showStatus(statusApp,'Produit enregistré. Catalogue actualisé.');
+      if(result.error){
+        if(result.error.message?.includes('image_urls'))throw new Error('La colonne image_urls manque dans Supabase. Exécute d’abord le SQL indiqué dans les instructions.');
+        throw result.error;
+      }
+      resetForm();await loadProducts();showStatus(statusApp,'Produit enregistré avec succès. Photos : '+allUrls.length+'.');
     }catch(err){showStatus(statusApp,'Erreur : '+(err.message||String(err)),true);}
     finally{$('saveBtn').disabled=false;$('saveBtn').textContent=$('productId').value?'Mettre à jour le produit':'Enregistrer le produit';}
   });
@@ -161,8 +172,7 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
       $('productId').value=p.id;$('name').value=p.name;$('category').value=p.category;$('price').value=p.price;
       $('stock').value=p.stock;$('description').value=p.description||'';$('sizes').value=(p.sizes||[]).join(', ');
       $('colors').value=(p.colors||[]).join(', ');$('published').checked=p.is_published;
-      currentImageUrl=p.image_url;currentImagePath=p.image_path;
-      if(p.image_url){$('preview').src=p.image_url;$('preview').classList.remove('hidden');}else{$('preview').classList.add('hidden');}
+      currentImageUrls=Array.isArray(p.image_urls)&&p.image_urls.length?p.image_urls.slice():(p.image_url?[p.image_url]:[]);selectedFiles=[];currentImagePath=p.image_path||null;renderPhotoGallery();
       $('formTitle').textContent='Modifier : '+p.name;$('saveBtn').textContent='Mettre à jour le produit';
       window.scrollTo({top:0,behavior:'smooth'});
     }
@@ -177,7 +187,7 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
     }
   });
   if(configOK()){
-    db=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+    initDb();
     db.auth.getSession().then(({data})=>{if(data.session)ensureAdmin();});
   }else{
     showStatus(statusLogin,'Étape requise : ouvre config.js et colle l’URL et la clé publique de Supabase.',true);
@@ -185,3 +195,4 @@ button.gold{background:var(--gold);color:#111}button.light{background:#eee;color
 })();
 </script>
 </body></html>
+                                                                            
